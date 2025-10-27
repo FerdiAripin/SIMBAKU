@@ -9,6 +9,7 @@
                 <div class="form-group">
                     <label for="kategori" class="form-label">Kategori <span class="text-danger">*</span></label>
                     <input type="text" name="kategori" class="form-control" placeholder="">
+                    <div class="invalid-feedback">Kategori wajib di isi!</div>
                 </div>
                 <div class="form-group">
                     <label for="ket" class="form-label">Keterangan</label>
@@ -57,6 +58,13 @@
                 ket: ket
             },
             success: function(data) {
+                if (data.status === 'error') {
+                    validasi(data.message, 'warning');
+                    $("input[name='kategori']").addClass('is-invalid');
+                    setLoading(false);
+                    return false;
+                }
+
                 $('#modaldemo8').modal('toggle');
                 swal({
                     title: "Berhasil ditambah!",
@@ -64,7 +72,18 @@
                 });
                 table.ajax.reload(null, false);
                 reset();
-                
+            },
+            error: function(xhr) {
+                if (xhr.status === 422) {
+                    const errors = xhr.responseJSON.errors;
+                    if (errors.kategori) {
+                        validasi(errors.kategori[0], 'warning');
+                        $("input[name='kategori']").addClass('is-invalid');
+                    }
+                } else {
+                    validasi('Terjadi kesalahan pada server', 'error');
+                }
+                setLoading(false);
             }
         });
     }

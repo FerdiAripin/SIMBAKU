@@ -7,6 +7,7 @@ use App\Models\Admin\AksesModel;
 use App\Models\Admin\KategoriModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Validator;
 use Yajra\DataTables\Facades\DataTables;
 
 class KategoriController extends Controller
@@ -68,7 +69,24 @@ class KategoriController extends Controller
 
     public function proses_tambah(Request $request)
     {
-        $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $request->jenisbarang)));
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'kategori' => 'required|unique:tbl_kategori,kategori_nama',
+            'ket' => 'nullable'
+        ], [
+            'kategori.required' => 'Kategori wajib di isi!',
+            'kategori.unique' => 'Kategori sudah ada, gunakan nama lain!'
+        ]);
+
+        // Cek jika validasi gagal
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $request->kategori)));
 
         //create
         KategoriModel::create([
@@ -77,11 +95,28 @@ class KategoriController extends Controller
             'kategori_ket' => $request->ket
         ]);
 
-        return response()->json(['success' => 'Berhasil']);
+        return response()->json(['status' => 'success', 'message' => 'Berhasil ditambahkan']);
     }
 
     public function proses_ubah(Request $request, KategoriModel $kategori)
     {
+        // Validasi input - ignore kategori yang sedang diupdate
+        $validator = Validator::make($request->all(), [
+            'kategori' => 'required|unique:tbl_kategori,kategori_nama,' . $kategori->kategori_id . ',kategori_id',
+            'ket' => 'nullable'
+        ], [
+            'kategori.required' => 'Kategori wajib di isi!',
+            'kategori.unique' => 'Kategori sudah ada, gunakan nama lain!'
+        ]);
+
+        // Cek jika validasi gagal
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
         $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $request->kategori)));
 
         //update
@@ -91,15 +126,15 @@ class KategoriController extends Controller
             'kategori_ket' => $request->ket
         ]);
 
-        return response()->json(['success' => 'Berhasil']);
+        return response()->json(['status' => 'success', 'message' => 'Berhasil diupdate']);
     }
 
     public function proses_hapus(Request $request, KategoriModel $kategori)
     {
-        
+
         //delete
         $kategori->delete();
 
-        return response()->json(['success' => 'Berhasil']);
+        return response()->json(['status' => 'success', 'message' => 'Berhasil dihapus']);
     }
 }
